@@ -1,8 +1,18 @@
 #!/usr/bin/env fish
 
-for i in (find . -name \*.md -type f)
-    echo (dirname $i)/(basename $i .md).html
-    pandoc --css site.css -s -o (dirname $i)/(basename $i .md).html $i
+function out_file
+    echo (dirname $argv)/(basename $argv .md).html
+end
+
+function pandoc_everything
+    for i in (find . -name \*.md -type f)
+	echo (out_file $i)
+	if test (dirname $i) = '.'
+	    pandoc --css site.css -s -o (out_file $i) $i
+	else
+	    pandoc --css ../site.css -s -o (out_file $i) $i
+	end
+    end
 end
 
 function ytojs
@@ -10,39 +20,32 @@ function ytojs
     sed '1d; /---/q' $argv | sed '$d' | yq r -j /dev/stdin
 end
 
-function tocgather
+function toc_gather
     echo '{ "article": [] }' >toc.json
     for i in (find articles -name \*.md -type f)[-1..1]
-	set target (basename $i .md).html
-	ytojs $i | jq ".file = \"$target\"" | read -z jsonblob
-	cat toc.json | jq ".article += [$jsonblob]" >toc.json
+	ytojs $i | jq '.file = "'(out_file $i)'"' | read -z jsonblob
+	string collect (cat toc.json | jq ".article += [$jsonblob]") > toc.json
     end
 end
 
-function tocbuild
+function toc_build
     pandoc --template index.template \
     --metadata-file toc.json --css site.css -o index.html index.md 
 end
 
-tocgather
-tocbuild
+pandoc_everything
+toc_gather
+toc_build
 
 
 ## echo "$(sort your_file)" > your_file
 # above: a one-liner to modify files in place
 
-# cat toc.json | jq ".article += [(ytojs $i | jq ".file = \"$target\"")]" >toc.json
-# but you've got to work out the right quoting in that middle bit
 # actually what is probably better
 # function get_blob
 #     ytojs $argv[0] | jq ".file = \"$argv[1]\""
 # end
 
-# cat toc.json | jq ".article += [(get_blob)]" > toc.json
-# that is, if you wanted to factor that out
-# which I don't think is needed
-# but that's what it would look like
-# you don't need to read toci at any rate
 
 # blog.json is where "global variables" go
 # nb: currently there is no blog.json

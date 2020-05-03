@@ -21,7 +21,7 @@ function ytojs
 end
 
 function toc_gather
-    echo '{ "article": [] }' >toc.json
+    echo '{ "article": [] }' > toc.json
     for i in (find articles -name \*.md -type f)[-1..1]
 	ytojs $i | jq '.file = "'(out_file $i)'"' | read -z jsonblob
 	string collect (cat toc.json | jq ".article += [$jsonblob]") > toc.json
@@ -45,16 +45,6 @@ toc_build
 # function get_blob
 #     ytojs $argv[0] | jq ".file = \"$argv[1]\""
 # end
-
-
-# blog.json is where "global variables" go
-# nb: currently there is no blog.json
-
-# site.css is where the css goes
-
-# index.template is the template for "index" pages
-
-# page.template is the template for every other page
 
 # Possible Features: more than one "category" of articles, IE,
 # root-level documents end up in the top-level navigation, and
